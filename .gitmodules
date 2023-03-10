@@ -1,3 +1,5 @@
 [submodule "packages/escaling/lib/forge-std"]
 	path = packages/escaling/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "lib/forge-std"]
+	branch = v1.5.1
