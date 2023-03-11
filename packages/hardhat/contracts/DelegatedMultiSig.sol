@@ -19,9 +19,7 @@ contract DelegatedMultiSig is MetaMultiSigWallet {
     mapping(uint => TransactionProposal) public transactionProposals;
     uint public proposalCounter;
 
-    constructor()
-        MetaMultiSigWallet(0, new address[](0), 0)
-    {}
+    constructor(uint256 _chainId, address[] memory _owners, uint _signaturesRequired) MetaMultiSigWallet(_chainId, _owners, _signaturesRequired) {}
 
     function setFunder(address _funder) public {
         require(funder == address(0), "Funder already set");
@@ -78,5 +76,14 @@ contract DelegatedMultiSig is MetaMultiSigWallet {
 
     function isTransactionApproved(uint proposalId) public view returns (bool) {
         return transactionProposals[proposalId].approved;
+    }
+
+    function executeTransaction(uint proposalId) public onlyFunder {
+        TransactionProposal storage proposal = transactionProposals[proposalId];
+        require(proposal.approved, "Not approved");
+        require(proposal.recipient != address(0), "Zero address recipient");
+        (bool success, ) = proposal.recipient.call{value: proposal.value}(proposal.data);
+        require(success, "Transaction failed");
+        delete transactionProposals[proposalId];
     }
 }

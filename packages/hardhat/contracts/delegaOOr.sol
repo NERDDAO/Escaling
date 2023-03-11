@@ -9,14 +9,11 @@ contract delegaOOr {
 
     constructor() {}
 
-    function createDelegation(address funder, address[] memory signers, uint signaturesRequired) public returns (address) {
-        DelegatedMultiSig delegation = new DelegatedMultiSig();
-        delegation.setFunder(funder);
-        for (uint i = 0; i < signers.length; i++) {
-            delegation.authorizeSigner(signers[i]);
-        }
-        delegation.updateSignaturesRequired(signaturesRequired);
-        emit DelegationCreated(address(delegation));
-        return address(delegation);
-    }
+function createDelegation(address funder, address[] memory signers, uint signaturesRequired) public returns (address) {
+    DelegatedMultiSig delegation = new DelegatedMultiSig(0, signers, signaturesRequired);
+    delegation.setFunder(funder);
+    emit DelegationCreated(address(delegation));
+    return address(delegation);
+}
+
 }
