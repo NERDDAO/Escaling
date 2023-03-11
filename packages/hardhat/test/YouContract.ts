@@ -1,28 +1,78 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { YourContract } from "../typechain-types";
 
-describe("YourContract", function () {
-  // We define a fixture to reuse the same setup in every test.
+describe("Delegation contract", function () {
+  let delegationContract;
+  let owner;
+  let delegate;
+  let alice;
+  let bob;
+  const amount = 100;
+  const nonce = 1;
 
-  let yourContract: YourContract;
   before(async () => {
-    const [owner] = await ethers.getSigners();
-    const yourContractFactory = await ethers.getContractFactory("YourContract");
-    yourContract = (await yourContractFactory.deploy(owner.address)) as YourContract;
-    await yourContract.deployed();
+    [owner, delegate, alice, bob] = await ethers.getSigners();
+    const Delegation = await ethers.getContractFactory("Delegation");
+    delegationContract = await Delegation.deploy();
+    await delegationContract.deployed();
   });
 
-  describe("Deployment", function () {
-    it("Should have the right message on deploy", async function () {
-      expect(await yourContract.greeting()).to.equal("Building Unstoppable Apps!!!");
-    });
+  it("should set the owner and delegate correctly", async () => {
+    expect(await delegationContract.owner()).to.equal(owner.address);
+    expect(await delegationContract.delegate()).to.equal(owner.address);
+  });
 
-    it("Should allow setting a new message", async function () {
-      const newGreeting = "Learn scaffold-eth! :)";
+  it("should deposit correctly", async () => {
+    await delegationContract.deposit({ value: amount });
+    expect(await delegationContract.getBalance(owner.address)).to.equal(amount);
+  });
 
-      await yourContract.setGreeting(newGreeting);
-      expect(await yourContract.greeting()).to.equal(newGreeting);
-    });
+  it("should request transfer correctly", async () => {
+    const message = ethers.utils.solidityKeccak256(
+      ["address", "address", "uint", "uint"],
+      [bob.address, alice.address, amount, nonce],
+    );
+    const signature = await delegate.signMessage(ethers.utils.arrayify(message));
+    try {
+      await delegationContract.requestTransfer(alice.address, amount, nonce, bob.address, signature);
+    } catch (error) {
+      console.log("error message: ", error.message);
+    }
+    expect(await delegationContract.getAllowance(bob.address, alice.address)).to.equal(amount);
+    expect(await delegationContract.nonce(bob.address)).to.equal(nonce);
+  });
+
+  it("should not approve transfer with invalid signature", async () => {
+    const message = ethers.utils.solidityKeccak256(
+      ["address", "address", "uint", "uint"],
+      [bob.address, alice.address, amount, nonce],
+    );
+    const signature = await alice.signMessage(ethers.utils.arrayify(message));
+    await expect(delegationContract.approveTransfer(bob.address, alice.address, amount, signature)).to.be.revertedWith(
+      "Invalid signature",
+    );
+  });
+
+  it("should not approve transfer without sufficient allowance", async () => {
+    const message = ethers.utils.solidityKeccak256(
+      ["address", "address", "uint", "uint"],
+      [bob.address, alice.address, amount, nonce],
+    );
+    const signature = await bob.signMessage(ethers.utils.arrayify(message));
+    await expect(delegationContract.approveTransfer(bob.address, alice.address, amount, signature)).to.be.revertedWith(
+      "Not authorized",
+    );
+  });
+
+  it("should approve transfer correctly", async () => {
+    const message = ethers.utils.solidityKeccak256(
+      ["address", "address", "uint", "uint"],
+      [bob.address, alice.address, amount, nonce],
+    );
+    const signature = await bob.signMessage(ethers.utils.arrayify(message));
+    await delegationContract.approveTransfer(bob.address, alice.address, amount, signature);
+    expect(await delegationContract.getBalance(alice.address)).to.equal(amount);
+    expect(await delegationContract.getAllowance(bob.address, alice.address)).to.equal(0);
+    expect(await delegationContract.nonce(bob.address)).to.equal(nonce);
   });
 });
