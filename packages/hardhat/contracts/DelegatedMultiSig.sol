@@ -13,13 +13,17 @@ contract DelegatedMultiSig is MetaMultiSigWallet {
         bool approved;
     }
 
+    string public delegationName;
+
     address public funder;
     mapping(address => bool) public authorizedSigners;
     uint public numAuthorizedSigners;
     mapping(uint => TransactionProposal) public transactionProposals;
     uint public proposalCounter;
 
-    constructor(uint256 _chainId, address[] memory _owners, uint _signaturesRequired) MetaMultiSigWallet(_chainId, _owners, _signaturesRequired) {}
+    constructor(uint256 _chainId, address[] memory _owners, uint _signaturesRequired, string memory _delegationName) MetaMultiSigWallet(_chainId, _owners, _signaturesRequired) {
+        delegationName = _delegationName; // Initialize the delegation name
+    }
 
     function setFunder(address _funder) public {
         require(funder == address(0), "Funder already set");
