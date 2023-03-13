@@ -12,7 +12,7 @@ const deploydelegaOOr: DeployFunction = async function (hre: HardhatRuntimeEnvir
   const sourceCode = fs.readFileSync(sourcePath, "utf8");
 
   // Compile the contract
-  const contractName = "delegaOOr";
+  const contractName = "DelegaOOr";
   const compiled = await hre.ethers.getContractFactory(contractName, sourceCode);
   const abi = compiled.interface.abi;
   const bytecode = compiled.bytecode;
@@ -28,6 +28,6 @@ const deploydelegaOOr: DeployFunction = async function (hre: HardhatRuntimeEnvir
   console.log("Contract deployed to:", address);
 };
 
-deploydelegaOOr.tags = ["delegaOOr"];
+deploydelegaOOr.tags = ["DelegaOOr"];
 
 export default deploydelegaOOr;

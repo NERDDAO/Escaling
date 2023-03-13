@@ -23,6 +23,7 @@ contract MetaMultiSigWallet {
     uint public signaturesRequired;
     uint public nonce;
     uint public chainId;
+    //ugh
 
     constructor(uint256 _chainId, address[] memory _owners, uint _signaturesRequired) {
         require(_signaturesRequired > 0, "constructor: must be non-zero sigs required");
