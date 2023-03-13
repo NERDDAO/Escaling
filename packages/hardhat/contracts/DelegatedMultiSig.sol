@@ -36,19 +36,6 @@ contract DelegatedMultiSig is MetaMultiSigWallet {
         _;
     }
 
-    function authorizeSigner(address signer) public onlySelf {
-        require(signer != address(0), "Zero address");
-        require(!authorizedSigners[signer], "Already authorized");
-        authorizedSigners[signer] = true;
-        numAuthorizedSigners++;
-    }
-
-    function removeSigner(address signer) public onlySelf {
-        require(authorizedSigners[signer], "Not authorized");
-        delete authorizedSigners[signer];
-        numAuthorizedSigners--;
-    }
-
     function proposeTransaction(address recipient, uint256 value, bytes memory data) public onlyAuthorizedSigner returns (uint) {
         uint proposalId = proposalCounter;
         transactionProposals[proposalId] = TransactionProposal({
