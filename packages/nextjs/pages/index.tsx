@@ -8,24 +8,21 @@ const Home: NextPage = () => {
   return (
     <>
       <Head>
-        <title>Scaffold-eth App</title>
+        <title>DelegatOOOOOr</title>
         <meta name="description" content="Created with 🏗 scaffold-eth" />
       </Head>
 
       <div className="flex items-center flex-col flex-grow pt-10">
         <div className="px-5">
           <h1 className="text-center mb-8">
-            <span className="block text-2xl mb-2">Welcome to</span>
-            <span className="block text-4xl font-bold">scaffold-eth 2</span>
+            <span className="block text-2xl mb-2">Welcome to the</span>
+            <span className="block text-4xl font-bold">DelegatOOOOOOOr</span>
           </h1>
-          <p className="text-center text-lg">
-            Get started by editing{" "}
-            <code className="italic bg-base-300 text-base font-bold">packages/nextjs/pages/index.tsx</code>
-          </p>
-          <p className="text-center text-lg">
-            Edit your smart contract <code className="italic bg-base-300 text-base font-bold">YourContract.sol</code> in{" "}
-            <code className="italic bg-base-300 text-base font-bold">packages/hardhat/contracts</code>
-          </p>
+
+          {/* put the contract components here */}
+          <div className="block text-2xl fill-secondary border-black border-4 p-8 rounded-3xl">
+            <p>Contracty stuff here</p>
+          </div>
         </div>
 
         <div className="flex-grow bg-base-300 w-full mt-16 px-8 py-12">
