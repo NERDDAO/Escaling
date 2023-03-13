@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import "./DelegatedMultiSig.sol";
 
-contract DelegaOOr {
+contract delegat00r {
 
   event DelegationCreated(address indexed delegation);
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "../lib/openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 
 contract MetaMultiSigWallet {
   using ECDSA for bytes32;
@@ -89,4 +89,5 @@ contract MetaMultiSigWallet {
   receive() payable external {
     emit Deposit(msg.sender, msg.value, address(this).balance);
   }
+  
 }
