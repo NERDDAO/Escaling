@@ -15,25 +15,25 @@ contract delegat00r {
     uint signaturesRequired;
   }
 
-  mapping(address => Delegation[]) public delegations;
+  mapping(address => Delegation[]) public delegator;
+  mapping(address => Delegation[]) public delegating;
+
+  function getDelegatorsForWallet(address wallet) public view returns (Delegation[] memory delegators) {
+    delegators = delegator[wallet];
+  }
+
+  function getDelegatingForWallet(address wallet) public view returns (Delegation[] memory delegatingForWallet) {
+    delegatingForWallet = delegating[wallet];
+  }
 
   function createDelegation(string memory name, address funder, address[] memory signers, uint signaturesRequired) public returns (address) {
     DelegatedMultiSig delegation = new DelegatedMultiSig(0, signers, signaturesRequired, name);
-    emit DelegationCreated(address(delegation));
-    delegations[funder].push(Delegation(name, msg.sender, funder, signers, signaturesRequired));
+    delegator[funder].push(Delegation(name, msg.sender, funder, signers, signaturesRequired));
     for (uint i = 0; i < signers.length; i++) {
-      delegations[signers[i]].push(Delegation(name, msg.sender, funder, signers, signaturesRequired));
+      delegating[signers[i]].push(Delegation(name, msg.sender, funder, signers, signaturesRequired));
     }
+    emit DelegationCreated(address(delegation));
     return address(delegation);
-  }
-
-  function getDelegationsForWallet(address wallet) public view returns (string[] memory, Delegation[] memory) {
-    Delegation[] memory walletDelegations = delegations[wallet];
-    string[] memory delegationNames = new string[](walletDelegations.length);
-    for (uint i = 0; i < walletDelegations.length; i++) {
-      delegationNames[i] = walletDelegations[i].name;
-    }
-    return (delegationNames, walletDelegations);
   }
 
 }
