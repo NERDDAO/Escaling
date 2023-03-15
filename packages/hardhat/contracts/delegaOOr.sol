@@ -1,41 +1,28 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-pragma solidity >=0.8.0 <0.9.0;
+import "./MetaMultiSigWallet.sol";
+import "./ModuleRegistry.sol";
 
-import "./DelegatedMultiSig.sol";
+contract Deployer {
+    function deployMetaMultiSigWalletWithModules(
+        uint256 _chainId,
+        address[] memory _owners,
+        uint256 _requiredSignatures,
+        address _allowedModuleType,
+        ModuleRegistry moduleRegistry,
+        bytes32[] memory _moduleTypes
+    ) external returns (MetaMultiSigWallet) {
+        MetaMultiSigWallet wallet = new MetaMultiSigWallet(_chainId, _owners, _requiredSignatures, _allowedModuleType);
 
-contract DelegaOOr {
-    event DelegationCreated(address indexed delegation);
+        for (uint256 i = 0; i < _moduleTypes.length; i++) {
+            address moduleAddress = moduleRegistry.modules(_moduleTypes[i]);
+            require(moduleAddress != address(0), "Deployer: Invalid module type");
 
-    struct Delegation {
-        string name;
-        address delegator;
-        address funder;
-        address[] signers;
-        uint signaturesRequired;
+            Module module = Module(moduleAddress);
+            wallet.enableModule(address(module));
+        }
+
+        return wallet;
     }
-
-    mapping(address => Delegation[]) public delegations;
-
-    constructor() {}
-
-function createDelegation(string memory name, address funder, address[] memory signers, uint signaturesRequired) public returns (address) {
-    DelegatedMultiSig delegation = new DelegatedMultiSig(0, signers, signaturesRequired, name);
-    emit DelegationCreated(address(delegation));
-    delegations[funder].push(Delegation(name, msg.sender, funder, signers, signaturesRequired));
-    for (uint i = 0; i < signers.length; i++) {
-        delegations[signers[i]].push(Delegation(name, msg.sender, funder, signers, signaturesRequired));
-    }
-    return address(delegation);
-}
-
-function getDelegationsForWallet(address wallet) public view returns (string[] memory, Delegation[] memory) {
-    Delegation[] memory walletDelegations = delegations[wallet];
-    string[] memory delegationNames = new string[](walletDelegations.length);
-    for (uint i = 0; i < walletDelegations.length; i++) {
-        delegationNames[i] = walletDelegations[i].name;
-    }
-    return (delegationNames, walletDelegations);
-}
-
 }

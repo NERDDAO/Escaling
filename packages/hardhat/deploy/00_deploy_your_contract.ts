@@ -3,11 +3,11 @@ import { DeployFunction } from "hardhat-deploy/types";
 import fs from "fs";
 import path from "path";
 
-const deploydelegaOOr: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+const deployDelegaOOr: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
   const { deploy } = hre.deployments;
 
-  // Read the source code from TopLevelMultiSig.sol
+  // Read the source code from delegaOOr.sol
   const sourcePath = path.join(__dirname, "..", "contracts", "delegaOOr.sol");
   const sourceCode = fs.readFileSync(sourcePath, "utf8");
 
@@ -26,8 +26,25 @@ const deploydelegaOOr: DeployFunction = async function (hre: HardhatRuntimeEnvir
   });
 
   console.log("Contract deployed to:", address);
+
+  // Create some template delegations
+  const delegaOOr = await hre.ethers.getContractAt("DelegaOOr", address);
+  const signers = await hre.ethers.getSigners();
+  const delegationNames = ["Delegation 1", "Delegation 2", "Delegation 3"];
+
+  for (let i = 0; i < delegationNames.length; i++) {
+    const name = delegationNames[i];
+    const funder = signers[i];
+    const delegationAddress = await delegaOOr.createDelegation(
+      name,
+      funder.address,
+      signers.map(s => s.address),
+      2,
+    );
+    console.log(`Created delegation "${name}" at address: ${delegationAddress}`);
+  }
 };
 
-deploydelegaOOr.tags = ["DelegaOOr"];
+deployDelegaOOr.tags = ["DelegaOOr"];
 
-export default deploydelegaOOr;
+export default deployDelegaOOr;
