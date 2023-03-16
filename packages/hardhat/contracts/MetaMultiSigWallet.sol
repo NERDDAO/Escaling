@@ -2,15 +2,15 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@gnosis.pm/zodiac/contracts/interfaces/IAvatar.sol";
 
-contract MetaMultiSigWallet is IAvatar {
+contract MetaMultiSigWallet is IAvatar, EIP712 {
     using ECDSA for bytes32;
     
-
-    event Deposit(address indexed sender, uint amount, uint balance);
     event ExecuteTransaction(address indexed owner, address payable to, uint256 value, bytes data, uint256 nonce, bytes32 hash, bytes result);
     event Owner(address indexed owner, bool added);
+    event Deposit(address indexed sender, uint amount, uint balance);
 
     mapping(address => bool) public isOwner;
     uint public signaturesRequired;
@@ -18,10 +18,29 @@ contract MetaMultiSigWallet is IAvatar {
     uint public chainId;
     address public owner;
     address public allowedModuleType;
+    bytes32 constant EIP712_DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    string constant public name = "MetaMultiSigWallet";
+    string constant public version = "1";
+
 
     // Linked list of modules
     address public sentinel;
     mapping(address => address) public modules;
+
+    // EIP-712 related variables and structs
+    bytes32 private immutable _HASHED_NAME;
+    bytes32 private immutable _HASHED_VERSION;
+    bytes32 private constant _TYPE_HASH = keccak256("Transaction(uint256 nonce,address to,uint256 value,bytes data)");
+
+    struct Transaction {
+        uint256 nonce;
+        address to;
+        uint256 value;
+        bytes data;
+    }
+    
+    // Add constructor and other functions here
+
 
     modifier onlySelf() {
         require(msg.sender == address(this), "Not Self");
@@ -35,7 +54,8 @@ contract MetaMultiSigWallet is IAvatar {
         _;
     }
 
-    constructor(uint256 _chainId, address[] memory _owners, uint _signaturesRequired, address _allowedModuleType) {
+    constructor(uint256 _chainId, address[] memory _owners, uint _signaturesRequired, address _allowedModuleType)
+        EIP712("MetaMultiSigWallet", "1") {
         require(_signaturesRequired > 0, "constructor: must be non-zero sigs required");
         owner = msg.sender;
         signaturesRequired = _signaturesRequired;
@@ -47,7 +67,41 @@ contract MetaMultiSigWallet is IAvatar {
 
         // Set up the sentinel for the module linked list
         sentinel = address(0x1);
+
+        // EIP-712 related initialization
+        _HASHED_NAME = keccak256(bytes("MetaMultiSigWallet"));
+        _HASHED_VERSION = keccak256(bytes("1"));
     }
+
+function domainSeparator() private view returns (bytes32) {
+    return keccak256(
+        abi.encode(
+            EIP712_DOMAIN_TYPEHASH,
+            keccak256(bytes(name)),
+            keccak256(bytes(version)),
+            chainId,
+            address(this)
+        )
+    );
+}
+
+
+
+        function _hashTransaction(Transaction memory transaction) private view returns (bytes32) {
+        bytes32 typeHash = _TYPE_HASH;
+        bytes32 hashedName = _HASHED_NAME;
+        bytes32 hashedVersion = _HASHED_VERSION;
+        uint256 chainID = chainId;
+
+        return keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator(),
+                keccak256(abi.encode(typeHash, transaction.nonce, transaction.to, transaction.value, keccak256(transaction.data)))
+            )
+        );
+    }
+    
 
     function _addOwner(address _owner) private {
         require(_owner != address(0), "constructor: zero address");
@@ -74,16 +128,24 @@ contract MetaMultiSigWallet is IAvatar {
         onlyModuleType
         returns (bytes memory)
     {
-        bytes32 _hash = getTransactionHash(nonce, to, value, data);
+        Transaction memory transaction = Transaction({
+            nonce: nonce,
+            to: to,
+            value: value,
+            data: data
+        });
+
+        bytes32 transactionHash = _hashTransaction(transaction);
         nonce++;
+
         uint256 validSignatures;
         address duplicateGuard;
         for (uint i = 0; i < signatures.length; i++) {
-            address recovered = recover(_hash, signatures[i]);
+            address recovered = ECDSA.recover(transactionHash, signatures[i]);
             require(recovered > duplicateGuard, "executeTransaction: duplicate or unordered signatures");
             duplicateGuard = recovered;
             if(isOwner[recovered]){
-              validSignatures++;
+                validSignatures++;
             }
         }
 
@@ -92,7 +154,7 @@ contract MetaMultiSigWallet is IAvatar {
         (bool success, bytes memory result) = to.call{value: value}(data);
         require(success, "executeTransaction: tx failed");
 
-        emit ExecuteTransaction(msg.sender, to, value, data, nonce - 1, _hash, result);
+        emit ExecuteTransaction(msg.sender, to, value, data, nonce - 1, transactionHash, result);
         return result;
     }
 
